@@ -104,7 +104,7 @@ module Interprete(D : DOMAIN) =
         | AST_GREATER_EQUAL -> AST_LESS
         in
         let cmp = if r then cmp else inv cmp in
-        D.compare a e1 cmp e2
+        D.compare a e1 cmp e2  (* call the comparinsion function in domain ==> !! define the function of compartion when e1 or e2 is a condatnt *)
 
     in
     doit a e r

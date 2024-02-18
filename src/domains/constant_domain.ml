@@ -100,17 +100,18 @@ module Constants = (struct
   (* comparison operations (filters) *)
 
   let eq a b =
-    (* this is not very precise, how can we improve it ? *)
     a, b
 
   let neq a b =
     a, b
 
-  let geq a b =
-    a, b
-
-  let gt a b =
-    a, b
+  let geq a b = match a,b with
+    | Cst x, Cst y -> if Z.geq x y then a, b else BOT, TOP (* comparing tow constant*)
+    | _ -> a, b
+        
+  let gt a b = match a,b with
+    | Cst x, Cst y -> if Z.gt x y then a, b else BOT, TOP (* comparing tow constant*)
+    | _ -> a, b
 
 
   (* subset inclusion of concretizations *)
