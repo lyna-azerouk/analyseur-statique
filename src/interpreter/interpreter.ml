@@ -163,10 +163,11 @@ module Interprete(D : DOMAIN) =
         (* and then filter by exit condition *)
         filter inv e false
 
-    | AST_assert _ ->
-       (* not implemented *)
-       (* to be sound, we return the argument unchanged *)
-       a
+    | AST_assert (e, _) ->
+       let res = filter a (e, ext) false in
+	      if not (D.is_bottom res) then
+	        (error ext  "assertion failure");	
+      filter a (e, ext) true
 
     | AST_print l ->
         (* print the current abstract environment *)
