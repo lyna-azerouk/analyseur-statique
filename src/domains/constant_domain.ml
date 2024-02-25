@@ -81,6 +81,7 @@ module Constants = (struct
     match a,b with
     |_,Cst y when (y==Z.zero) -> BOT
     |Cst y,TOP when (y==Z.zero)->Cst Z.zero
+    |TOP, TOP -> TOP
     |_,_ -> lift2 Z.div a b
 
 
@@ -113,10 +114,11 @@ module Constants = (struct
   let neq a b = match a,b with
   | BOT,x | x,BOT -> x, BOT
   | Cst x, Cst y -> if not (Z.equal x y) then a, b else BOT, BOT
+  | TOP, Cst _ -> TOP, b
   | _ -> TOP, TOP
 
   let geq a b = match a,b with
-    | Cst x, Cst y -> if Z.geq x y then a, b else BOT, TOP 
+    | Cst x, Cst y -> if Z.geq x y then a, b else BOT, BOT 
     | _ -> a, b
         
   let gt a b = match a,b with
