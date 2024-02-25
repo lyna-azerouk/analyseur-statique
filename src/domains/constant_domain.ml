@@ -73,11 +73,15 @@ module Constants = (struct
 
   let sub = lift2 Z.sub
 
-  let mul = lift2 Z.mul
+  let mul x y= match x,y with
+	| TOP, Cst a |Cst a, TOP when  a= Z.zero -> Cst Z.zero
+	| _ -> lift2 Z.mul x y
 
   let div a b =
-    if b = Cst Z.zero then BOT
-    else lift2 Z.div a b
+    match a,b with
+    |_,Cst y when (y==Z.zero) -> BOT
+    |Cst y,TOP when (y==Z.zero)->Cst Z.zero
+    |_,_ -> lift2 Z.div a b
 
 
   (* set-theoretic operations *)
@@ -99,19 +103,28 @@ module Constants = (struct
 
   (* comparison operations (filters) *)
 
-  let eq a b =
-    a, b
+  let eq a b = match a,b with
+  | Cst x, Cst y -> if Z.equal x y then a, b else BOT, BOT
+  | TOP, Cst x -> Cst x , Cst x
+  | Cst x , TOP -> Cst x , Cst x
+  | BOT,x | x,BOT -> x, BOT
+  | _ -> TOP, TOP
 
-  let neq a b =
-    a, b
+  let neq a b = match a,b with
+  | BOT,x | x,BOT -> x, BOT
+  | Cst x, Cst y -> if not (Z.equal x y) then a, b else BOT, BOT
+  | _ -> TOP, TOP
 
   let geq a b = match a,b with
-    | Cst x, Cst y -> if Z.geq x y then a, b else BOT, TOP (* comparing tow constant*)
+    | Cst x, Cst y -> if Z.geq x y then a, b else BOT, TOP 
     | _ -> a, b
         
   let gt a b = match a,b with
-    | Cst x, Cst y -> if Z.gt x y then a, b else BOT, TOP (* comparing tow constant*)
-    | _ -> a, b
+	  | Cst x, Cst y when Z.compare x y > 0 -> a, b
+    | x, TOP ->  x, TOP
+    | TOP, x -> TOP, x
+    | BOT, x -> BOT, x
+    | _ -> BOT, BOT
 
 
   (* subset inclusion of concretizations *)
