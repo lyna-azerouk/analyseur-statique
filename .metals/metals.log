@@ -234,3 +234,6 @@ create table fingerprints(
 17:24:58.944 [pool-1-thread-4] DEBUG org.flywaydb.core.FlywayExecutor -- Memory usage: 80 of 104M
 2024.02.25 17:24:59 WARN  no build tool detected in workspace '/Users/linaazerouk/Documents/M2/Tas2/projet-tas'. The most common cause for this problem is that the editor was opened in the wrong working directory, for example if you use sbt then the workspace directory should contain build.sbt. 
 2024.02.25 17:24:59 WARN  Build server is not auto-connectable.
+2024.02.25 18:51:28 INFO  Shutting down server
+2024.02.25 18:51:28 INFO  shutting down Metals
+2024.02.25 18:51:28 INFO  Exiting server
