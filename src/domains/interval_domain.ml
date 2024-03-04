@@ -78,22 +78,22 @@
   let neg  x = lift1 Z.neg x
   (* comparison operations (filters) *)  
   let meet  x y : t = match x, y with
-  | Iv(Cst a, MINF), Iv(Cst b, MINF) ->
-      let max_start = Z.min a b in
-      Iv(Cst max_start, MINF)
-  | Iv(PINF, MINF), Iv(Cst y, MINF) ->
-        Iv(Cst y, MINF)
-  | Iv(PINF, MINF), a |a, Iv(PINF, MINF)-> a
-  | Iv(Cst a, Cst b), Iv(Cst c, Cst d) ->
-    let max_start = Z.max a c in
-    let min_end = Z.min b d in
-    if Z.compare max_start min_end <= 0 then
-      Iv(Cst max_start, Cst min_end)
-    else
-      BOT
-  |_, BOT | BOT, _ -> BOT
-  | _, _ -> BOT
-
+    | Iv(Cst a, MINF), Iv(Cst b, MINF) ->
+        let max_start = Z.min a b in
+        Iv(Cst max_start, MINF)
+    | Iv(PINF, MINF), Iv(Cst y, MINF) ->
+          Iv(Cst y, MINF)
+    | Iv(PINF, MINF), a |a, Iv(PINF, MINF)-> a
+    | Iv(Cst a, Cst b), Iv(Cst c, Cst d) ->
+      let max_start = Z.max a c in
+      let min_end = Z.min b d in
+      if Z.compare max_start min_end <= 0 then
+        Iv(Cst max_start, Cst min_end)
+      else
+        BOT
+    |_, BOT | BOT, _ -> BOT
+    | _, _ -> BOT
+    
   let eq a b = let m = meet a b in m, m
   let neq a b = let m = meet a b in m, m
 
@@ -110,14 +110,6 @@
     |Iv(Cst a, Cst b), Iv(Cst c, Cst d) when Z.geq a d-> Iv(Cst a, Cst (Z.min b d)), Iv(Cst (Z.max a c), Cst d)
     | _ -> x, y
 
-  (* let leq a b = match a, b with
-      |Iv(x,y),Iv(v,w) -> (match (bound_cmp x v),(bound_cmp x w),(bound_cmp y v),(bound_cmp y w),(bound_cmp v w)  with
-      |_,_,(-1),(-1),_-> (BOT,BOT)
-      |(-1),_,_,(-1),_|(0),_,_,(-1),_-> (Iv(v,y),Iv(v,y))
-      |(-1),_,_,(1),_-> (Iv(v,y),b)
-      |_,_,_,(-1),_-> (a,Iv(v,y))
-      |_,_,_,_,_-> (a,b))
-    |_->(a,b) *)
 (* Fonction utilitaire: ***********************************************)
   let bound_to_string (x:bound) = match x with 
     |Cst x ->  Z.to_string x
@@ -151,6 +143,7 @@
     | AST_MULTIPLY -> mul x y
     | AST_DIVIDE   -> div x y
 
+(*TO DO: correct this function ********************)
   let compare x y op  =  match op with 
     | AST_NOT_EQUAL -> neq x y
     | AST_EQUAL -> eq x y
@@ -186,9 +179,9 @@
     | AST_MINUS ->
       meet x (add y r), meet y (sub x r)
     | AST_MULTIPLY ->
-          let contains_zero o = subset (const Z.zero) o in
-          (if contains_zero y && contains_zero r then x else meet x (div r y)),
-          (if contains_zero x && contains_zero r then y else meet y (div r x))
+      let contains_zero o = subset (const Z.zero) o in
+      (if contains_zero y && contains_zero r then x else meet x (div r y)),
+      (if contains_zero x && contains_zero r then y else meet y (div r x))
     |_  -> x,y 
 
   let bwd_unary x op r = match op with
