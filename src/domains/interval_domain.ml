@@ -44,6 +44,13 @@
                         |MINF,Cst b,_,Cst d| _,Cst b,MINF,Cst d -> Iv (MINF, Cst (f b d))
                         |_ -> BOT)
 
+  let bound_cmp (a:bound) (b:bound) : int = match a,b with
+    | MINF,MINF | PINF,PINF -> 0
+    | MINF,_ | _,PINF -> -1
+    | PINF,_ | _,MINF -> 1
+    | Cst i, Cst j -> Z.compare i j
+
+
   (* arithmetic operations *)
   let add (x:t) (y:t) : t = lift2 Z.add x y
   let sub x y= lift2 Z.sub x y
@@ -69,20 +76,49 @@
     | _, _ -> BOT
 
   let neg  x = lift1 Z.neg x
-  (* comparison operations (filters) *)
-  let meet x y :t = match x,y with  (*Dans ce cs meet prend en paramettre deux intervals*)
-  |Iv(Cst a, Cst b), Iv(Cst c, Cst d) -> Iv(Cst (Z.max a c),  Cst (Z.max b d))
-  |_ , _ -> x
-  
+  (* comparison operations (filters) *)  
+  let meet  x y : t = match x, y with
+  | Iv(Cst a, MINF), Iv(Cst b, MINF) ->
+      let max_start = Z.min a b in
+      Iv(Cst max_start, MINF)
+  | Iv(PINF, MINF), Iv(Cst y, MINF) ->
+        Iv(Cst y, MINF)
+  | Iv(PINF, MINF), a |a, Iv(PINF, MINF)-> a
+  | Iv(Cst a, Cst b), Iv(Cst c, Cst d) ->
+    let max_start = Z.max a c in
+    let min_end = Z.min b d in
+    if Z.compare max_start min_end <= 0 then
+      Iv(Cst max_start, Cst min_end)
+    else
+      BOT
+  |_, BOT | BOT, _ -> BOT
+  | _, _ -> BOT
 
   let eq a b = let m = meet a b in m, m
   let neq a b = let m = meet a b in m, m
-  let geq a b = let m = meet a b in m, m
-  let gt a b = let m = meet a b in m, m
 
+  let geq a b = match a, b with
+    |Iv(x,y),Iv(v,w) -> (match (bound_cmp x v),(bound_cmp x w),(bound_cmp y v),(bound_cmp y w),(bound_cmp v w)  with
+    |_,_,(-1),(-1),_-> (BOT,BOT)
+    |(-1),_,_,(-1),_|(0),_,_,(-1),_-> (Iv(v,y),Iv(v,y))
+    |(-1),_,_,(1),_-> (Iv(v,y),b)
+    |_,_,_,(-1),_-> (a,Iv(v,y))
+    |_,_,_,_,_-> (a,b))
+  |_->(a,b)
 
+  let gt x y = match x, y with
+    |Iv(Cst a, Cst b), Iv(Cst c, Cst d) when Z.geq a d-> Iv(Cst a, Cst (Z.min b d)), Iv(Cst (Z.max a c), Cst d)
+    | _ -> x, y
+
+  (* let leq a b = match a, b with
+      |Iv(x,y),Iv(v,w) -> (match (bound_cmp x v),(bound_cmp x w),(bound_cmp y v),(bound_cmp y w),(bound_cmp v w)  with
+      |_,_,(-1),(-1),_-> (BOT,BOT)
+      |(-1),_,_,(-1),_|(0),_,_,(-1),_-> (Iv(v,y),Iv(v,y))
+      |(-1),_,_,(1),_-> (Iv(v,y),b)
+      |_,_,_,(-1),_-> (a,Iv(v,y))
+      |_,_,_,_,_-> (a,b))
+    |_->(a,b) *)
 (* Fonction utilitaire: ***********************************************)
-
   let bound_to_string (x:bound) = match x with 
     |Cst x ->  Z.to_string x
     |PINF -> "INF"
@@ -116,32 +152,49 @@
     | AST_DIVIDE   -> div x y
 
   let compare x y op  =  match op with 
+    | AST_NOT_EQUAL -> neq x y
     | AST_EQUAL -> eq x y
-    | AST_NOT_EQUAL     -> neq x y
     | AST_GREATER_EQUAL -> geq x y
-    | AST_GREATER -> gt x y
-    | AST_LESS_EQUAL    -> let y',x' = geq y x in x',y'
+    | AST_GREATER ->geq x y
+    | AST_LESS_EQUAL ->  let y',x' = geq y x in x',y'
     | AST_LESS  -> let y',x' = gt y x in x',y'
 
 
-
-  let bwd_binary x y op r = match op, r with 
-  |_ ,_  -> x,y 
-
   let subset a b = match a,b with 
-    |_ ->true
+    | BOT,_ -> true
+    | _, BOT -> false
+    | Iv (a,b), Iv(c,d) -> bound_cmp a c >= 0 && bound_cmp b d <= 0
 
+  let bound_min (a:bound) (b:bound) : bound = 
+    let x = bound_cmp a b in
+      if x=(-1) || x=0 then a
+      else b
+  
+  let bound_max (a:bound) (b:bound) : bound =
+    let x = bound_cmp a b in
+      if(x=(-1) || x=0) then b
+      else a
 
+  let join a b = match a, b with 
+    | BOT, x | x, BOT -> x
+    | Iv(PINF, MINF), x | x, Iv(PINF, MINF) -> x
+    | Iv(i, j), Iv(k, l) ->  Iv(bound_min i k, bound_max j l)
+
+  let bwd_binary x y op r = match op with 
+    | AST_PLUS ->
+      meet x (sub r y), meet y (sub r x)
+    | AST_MINUS ->
+      meet x (add y r), meet y (sub x r)
+    | AST_MULTIPLY ->
+          let contains_zero o = subset (const Z.zero) o in
+          (if contains_zero y && contains_zero r then x else meet x (div r y)),
+          (if contains_zero x && contains_zero r then y else meet y (div r x))
+    |_  -> x,y 
+
+  let bwd_unary x op r = match op with
+    | AST_UNARY_PLUS  -> meet x r
+    | AST_UNARY_MINUS -> meet x (neg r)
 
   let widen x y = match x, y with 
     |_ -> BOT
-
-  
-  let bwd_unary x op r =  match x,op,r with 
-    | _,_,_ -> x
-
-
-  let join x y = match x, y with 
-  |_ , _-> x
-
  end : VALUE_DOMAIN)
