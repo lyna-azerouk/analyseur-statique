@@ -27,6 +27,34 @@
    | BOT 
 
 (* Fonction utilitaire: ***********************************************)
+  let bound_cmp (a:bound) (b:bound) : int = match a,b with
+  | MINF,MINF | PINF,PINF -> 0
+  | MINF,_ | _,PINF -> -1
+  | PINF,_ | _,MINF -> 1
+  | Cst i, Cst j -> Z.compare i j
+
+  let bound_min (a:bound) (b:bound) : bound = 
+    let x = bound_cmp a b in
+      if x=(-1) || x=0 then a
+      else b
+
+  let bound_max (a:bound) (b:bound) : bound =
+    let x = bound_cmp a b in
+      if(x=(-1) || x=0) then b
+      else a
+
+  let minus_one x =
+    match x with
+    |PINF -> PINF
+    |MINF -> MINF
+    |Cst a -> Cst (Z.sub a Z.one)
+
+  let plus_one x =
+    match x with
+    |PINF -> PINF
+    |MINF -> MINF
+    |Cst a -> Cst (Z.add a Z.one)
+
   (* lift binary arithmetic operations *)
   let lift1 f x  =match x with
   | BOT-> BOT
@@ -43,12 +71,6 @@
                         |MINF,_,_,PINF| _,PINF,MINF,_| MINF,PINF,_,_ | _,_,MINF,PINF -> Iv(MINF,PINF)
                         |MINF,Cst b,_,Cst d| _,Cst b,MINF,Cst d -> Iv (MINF, Cst (f b d))
                         |_ -> BOT)
-
-  let bound_cmp (a:bound) (b:bound) : int = match a,b with
-    | MINF,MINF | PINF,PINF -> 0
-    | MINF,_ | _,PINF -> -1
-    | PINF,_ | _,MINF -> 1
-    | Cst i, Cst j -> Z.compare i j
 
 
   (* arithmetic operations *)
@@ -76,6 +98,7 @@
     | _, _ -> BOT
 
   let neg  x = lift1 Z.neg x
+
   (* comparison operations (filters) *)  
   let meet  x y : t = match x, y with
     | Iv(Cst a, MINF), Iv(Cst b, MINF) ->
@@ -97,18 +120,22 @@
   let eq a b = let m = meet a b in m, m
   let neq a b = let m = meet a b in m, m
 
-  let geq a b = match a, b with
-    |Iv(x,y),Iv(v,w) -> (match (bound_cmp x v),(bound_cmp x w),(bound_cmp y v),(bound_cmp y w),(bound_cmp v w)  with
-    |_,_,(-1),(-1),_-> (BOT,BOT)
-    |(-1),_,_,(-1),_|(0),_,_,(-1),_-> (Iv(v,y),Iv(v,y))
-    |(-1),_,_,(1),_-> (Iv(v,y),b)
-    |_,_,_,(-1),_-> (a,Iv(v,y))
-    |_,_,_,_,_-> (a,b))
-  |_->(a,b)
+  let geq a b = match a, b with  (* explained by zacky*)
+    |Iv(x, y),Iv( v, w) when (bound_cmp y v) >= 0-> Iv(bound_max x v, y), Iv(v, bound_min y w)
+    |_ ,_  -> BOT, BOT
 
-  let gt x y = match x, y with
-    |Iv(Cst a, Cst b), Iv(Cst c, Cst d) when Z.geq a d-> Iv(Cst a, Cst (Z.min b d)), Iv(Cst (Z.max a c), Cst d)
-    | _ -> x, y
+  let gt a b = match a, b with  (* explained by zacky*)
+    |Iv(x, y), Iv(v, w) when (bound_cmp y v) = 1  -> Iv(bound_max x (plus_one v), y), Iv(v, bound_min (minus_one y) w)
+    |_ ,_  ->  BOT, BOT
+
+  
+  (* let lett a b = match a, b with  (* explained by zacky*)
+    |Iv(x, y), Iv(v, w) when (bound_cmp y v) = 1 || (bound_cmp y v) = 0-> Iv(x, bound_min y w), Iv(bound_max x v, w)
+    |_ ,_  ->  BOT, BOT
+
+  let lt a b = match a, b with  (* explained by zacky*)
+    |Iv(x, y), Iv(v, w) when (bound_cmp y v) = 1 -> Iv(x, bound_min y (minus_one w)), Iv(bound_max x (plus_one v), w)
+    |_ ,_  ->  BOT, BOT *)
 
 (* Fonction utilitaire: ***********************************************)
   let bound_to_string (x:bound) = match x with 
@@ -148,25 +175,15 @@
     | AST_NOT_EQUAL -> neq x y
     | AST_EQUAL -> eq x y
     | AST_GREATER_EQUAL -> geq x y
-    | AST_GREATER ->geq x y
-    | AST_LESS_EQUAL ->  let y',x' = geq y x in x',y'
-    | AST_LESS  -> let y',x' = gt y x in x',y'
+    | AST_GREATER ->gt x y
+    | AST_LESS_EQUAL    -> let y',x' = geq y x in x',y'
+    | AST_LESS          -> let y',x' = gt y x in x',y'
 
 
   let subset a b = match a,b with 
     | BOT,_ -> true
     | _, BOT -> false
     | Iv (a,b), Iv(c,d) -> bound_cmp a c >= 0 && bound_cmp b d <= 0
-
-  let bound_min (a:bound) (b:bound) : bound = 
-    let x = bound_cmp a b in
-      if x=(-1) || x=0 then a
-      else b
-  
-  let bound_max (a:bound) (b:bound) : bound =
-    let x = bound_cmp a b in
-      if(x=(-1) || x=0) then b
-      else a
 
   let join a b = match a, b with 
     | BOT, x | x, BOT -> x
