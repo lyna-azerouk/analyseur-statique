@@ -33,7 +33,7 @@
   | PINF,_ | _,MINF -> 1
   | Cst i, Cst j -> Z.compare i j
 
-  let bound_min (a:bound) (b:bound) : bound = 
+  let bound_min (a:bound) (b:bound) : bound =
     let x = bound_cmp a b in
       if x=(-1) || x=0 then a
       else b
@@ -74,8 +74,11 @@
 
 
   (* arithmetic operations *)
+  let neg  x = lift1 Z.neg x
+
   let add (x:t) (y:t) : t = lift2 Z.add x y
-  let sub x y= lift2 Z.sub x y
+  let sub x y= lift2 Z.add x (neg y)
+
   let mul (x: t) (y: t) : t =
     match x, y with
     | Iv(Cst a, Cst b), Iv(Cst c, Cst d) ->
@@ -97,16 +100,10 @@
       Iv(Cst min_bound, Cst max_bound)
     | _, _ -> BOT
 
-  let neg  x = lift1 Z.neg x
 
-  (* comparison operations (filters) *)  
-  let meet  x y : t = match x, y with
-    | Iv(Cst a, MINF), Iv(Cst b, MINF) ->
-        let max_start = Z.min a b in
-        Iv(Cst max_start, MINF)
-    | Iv(PINF, MINF), Iv(Cst y, MINF) ->
-          Iv(Cst y, MINF)
-    | Iv(PINF, MINF), a |a, Iv(PINF, MINF)-> a
+  (* intersection (filters) *)  
+  let meet x y : t =
+    match x, y with
     | Iv(Cst a, Cst b), Iv(Cst c, Cst d) ->
       let max_start = Z.max a c in
       let min_end = Z.min b d in
@@ -114,18 +111,26 @@
         Iv(Cst max_start, Cst min_end)
       else
         BOT
-    |_, BOT | BOT, _ -> BOT
+    | _, BOT | BOT, _ -> BOT
     | _, _ -> BOT
-    
-  let eq a b = let m = meet a b in m, m
-  let neq a b = let m = meet a b in m, m
+  
+  let eq a b =
+    let m = meet a b in
+    match m with
+    | BOT -> BOT, BOT
+    | Iv (start, end_) -> Iv (start, end_), Iv (start, end_)
+
+  let neq a b = match a, b with (* explained by zacky*)
+    |Iv(x, y),Iv( v, w) when (bound_cmp x v) = 0 && (bound_cmp y w) = 0 -> a,b
+    |Iv(x, y),Iv( v, _) when (bound_cmp x v) =0 -> Iv(plus_one x, y), b
+    | _, _ ->  let m = meet a b in m, m
 
   let geq a b = match a, b with  (* explained by zacky*)
     |Iv(x, y),Iv( v, w) when (bound_cmp y v) >= 0-> Iv(bound_max x v, y), Iv(v, bound_min y w)
     |_ ,_  -> BOT, BOT
 
   let gt a b = match a, b with  (* explained by zacky*)
-    |Iv(x, y), Iv(v, w) when (bound_cmp y v) = 1  -> Iv(bound_max x (plus_one v), y), Iv(v, bound_min (minus_one y) w)
+    |Iv(x, y), Iv(v, w) when (bound_cmp y v) >= 1 -> Iv(bound_max x (plus_one v), y), Iv(v, bound_min (minus_one y) w)
     |_ ,_  ->  BOT, BOT
 
   
