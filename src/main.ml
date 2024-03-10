@@ -54,7 +54,7 @@ let main () =
      (* options to add *)
      (* -interval *)
 	   "-interval", Arg.Unit (fun ()  -> action := IntervalAnalysis.eval_prog),"";
-     (* -delay *)
+    "-delay",     Arg.Set_int Interpreter.widening_delay, "";
      (* -unroll *)
      (* -parity-interval *)
 

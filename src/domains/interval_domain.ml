@@ -5,7 +5,7 @@
 *)
 
 (* 
-   The interval domain
+   The Iv domain
  *)
 
 
@@ -20,7 +20,7 @@
    type bound =
    | PINF
    | MINF
-   | Cst of Z.t
+   | Int of Z.t
 
  type t = 
    | Iv of bound*bound
@@ -31,7 +31,7 @@
   | MINF,MINF | PINF,PINF -> 0
   | MINF,_ | _,PINF -> -1
   | PINF,_ | _,MINF -> 1
-  | Cst i, Cst j -> Z.compare i j
+  | Int i, Int j -> Z.compare i j
 
   let bound_min (a:bound) (b:bound) : bound =
     let x = bound_cmp a b in
@@ -47,29 +47,29 @@
     match x with
     |PINF -> PINF
     |MINF -> MINF
-    |Cst a -> Cst (Z.sub a Z.one)
+    |Int a -> Int (Z.sub a Z.one)
 
   let plus_one x =
     match x with
     |PINF -> PINF
     |MINF -> MINF
-    |Cst a -> Cst (Z.add a Z.one)
+    |Int a -> Int (Z.add a Z.one)
 
   (* lift binary arithmetic operations *)
   let lift1 f x  =match x with
   | BOT-> BOT
   | Iv(a,b) -> (match a, b with
-              |Cst x, Cst y when (Z.geq x Z.zero && Z.geq y Z.zero )-> if Z.gt (f x) (f y) then Iv(Cst (f y),  Cst(f x)) else  Iv(Cst (f x),  Cst(f y)) 
+              |Int x, Int y when (Z.geq x Z.zero && Z.geq y Z.zero )-> if Z.gt (f x) (f y) then Iv(Int (f y),  Int(f x)) else  Iv(Int (f x),  Int(f y)) 
               | _, _  -> Iv(a, b))
 
   (* lift binary arithmetic operations *)
   let lift2  f x y =match x,y with
   | BOT,_ | _,BOT -> BOT
   | Iv(a,b), Iv (c,d) ->(match a,b,c,d with
-                        |Cst a,PINF,Cst c,_| Cst a,_,Cst c,PINF -> Iv (Cst (f a c),PINF)
-                        |Cst a,Cst b,Cst c,Cst d -> Iv (Cst (f a c),Cst (f b d))
+                        |Int a,PINF,Int c,_| Int a,_,Int c,PINF -> Iv (Int (f a c),PINF)
+                        |Int a,Int b,Int c,Int d -> Iv (Int (f a c),Int (f b d))
                         |MINF,_,_,PINF| _,PINF,MINF,_| MINF,PINF,_,_ | _,_,MINF,PINF -> Iv(MINF,PINF)
-                        |MINF,Cst b,_,Cst d| _,Cst b,MINF,Cst d -> Iv (MINF, Cst (f b d))
+                        |MINF,Int b,_,Int d| _,Int b,MINF,Int d -> Iv (MINF, Int (f b d))
                         |_ -> BOT)
 
 
@@ -81,38 +81,37 @@
 
   let mul (x: t) (y: t) : t =
     match x, y with
-    | Iv(Cst a, Cst b), Iv(Cst c, Cst d) ->
+    | Iv(Int a, Int b), Iv(Int c, Int d) ->
       let min_bound = Z.min (Z.mul a c) (Z.mul a d) in
       let max_bound = Z.max (Z.mul b c) (Z.mul b d) in
-      Iv(Cst min_bound, Cst max_bound)
-    | _, _ -> Iv(Cst Z.zero, Cst Z.zero)
+      Iv(Int min_bound, Int max_bound)
+    | _, _ -> Iv(Int Z.zero, Int Z.zero)
   
   let div (x: t) (y: t) : t =
     match x, y with
-    | _, Iv(_, Cst y1) when Z.equal y1 Z.zero -> BOT
-    | Iv(Cst a, Cst b), Iv(Cst c, Cst d) when Z.compare c Z.one >= 0 ->
+    | _, Iv(_, Int y1) when Z.equal y1 Z.zero -> BOT
+    | Iv(Int a, Int b), Iv(Int c, Int d) when Z.compare c Z.one >= 0 ->
       let min_bound = Z.min (Z.div a c) (Z.div a d) in
       let max_bound = Z.max (Z.div b c) (Z.div b d) in
-      Iv(Cst min_bound, Cst max_bound)
-    | Iv(Cst a, Cst b), Iv(Cst c, Cst d) ->
+      Iv(Int min_bound, Int max_bound)
+    | Iv(Int a, Int b), Iv(Int c, Int d) ->
       let min_bound = Z.min (Z.div b c) (Z.div b d) in
       let max_bound = Z.max (Z.div a c) (Z.div a d) in
-      Iv(Cst min_bound, Cst max_bound)
+      Iv(Int min_bound, Int max_bound)
     | _, _ -> BOT
 
+      (* comparison for values *)
+  let gt_value x y = match x,y with
+      | MINF, _ | _, PINF -> false
+      | PINF, _ | _, MINF -> true 
+      | Int v1, Int v2 -> Z.gt v1 v2
 
   (* intersection (filters) *)  
-  let meet x y : t =
-    match x, y with
-    | Iv(Cst a, Cst b), Iv(Cst c, Cst d) ->
-      let max_start = Z.max a c in
-      let min_end = Z.min b d in
-      if Z.compare max_start min_end <= 0 then
-        Iv(Cst max_start, Cst min_end)
-      else
-        BOT
-    | _, BOT | BOT, _ -> BOT
-    | _, _ -> BOT
+  let meet x y =  match x,y with 
+    | BOT, _ | _, BOT -> BOT 
+    | Iv (a1, b1), Iv (a2, b2) ->
+        if gt_value a2 b1 || gt_value a1 b2 then BOT 
+        else Iv (bound_max a1 a2, bound_min b1 b2)
   
   let eq a b =
     let m = meet a b in
@@ -144,9 +143,9 @@
 
 (* Fonction utilitaire: ***********************************************)
   let bound_to_string (x:bound) = match x with 
-    |Cst x ->  Z.to_string x
-    |PINF -> "INF"
-    |MINF -> "MINF"
+    |Int x ->  Z.to_string x
+    |PINF -> "+∞"
+    |MINF -> "-∞"
 
   let print fmt (x:t)=  match x with 
   | Iv(x, y) -> Format.fprintf fmt "[%s;%s]" (bound_to_string x) (bound_to_string y)
@@ -156,14 +155,14 @@
 
   let bottom =BOT
 
-  let const c = Iv (Cst c, Cst c)
+  let const c = Iv (Int c, Int c)
 
   let is_bottom a =  a=BOT
 
   let rand a b =
     match a, b with
     | _, _ when b < a -> BOT (* Handle case where b < a *)
-    | _, _ -> Iv (Cst a, Cst b) (* Handle other cases *)
+    | _, _ -> Iv (Int a, Int b) (* Handle other cases *)
 
   let unary x op = match  op with 
     | AST_UNARY_MINUS -> neg x
@@ -210,6 +209,16 @@
     | AST_UNARY_PLUS  -> meet x r
     | AST_UNARY_MINUS -> meet x (neg r)
 
-  let widen x y = match x, y with 
-    |_ -> BOT
+
+
+  let max_value x y = not (gt_value y x)
+
+  let widen x y = match x,y with
+    | BOT, _ -> y 
+    | _, BOT -> x
+    | Iv (a, b), Iv (c, d) ->
+      let a' = if max_value c a then a else MINF in
+      let b' = if max_value b d then b else PINF in Iv(a',b')
+    
+    
  end : VALUE_DOMAIN)

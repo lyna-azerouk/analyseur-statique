@@ -23,6 +23,7 @@ open Domain
 (* for debugging *)
 let trace = ref false
 
+let widening_delay = ref 0
 
 
 (* utilities *)
@@ -133,7 +134,7 @@ module Interprete(D : DOMAIN) =
         D.assign a i e
 
     | AST_if (e,s1,Some s2) ->
-        (* compute both branches *)
+
         let t = eval_stat (filter a e true ) s1 in
         let f = eval_stat (filter a e false) s2 in
         (* then join *)
@@ -147,21 +148,29 @@ module Interprete(D : DOMAIN) =
         D.join t f
 
     | AST_while (e,s) ->
-        (* simple fixpoint *)
-        let rec fix (f:t -> t) (x:t) : t =
-          let fx = f x in
-          if D.subset fx x then fx
-          else fix f fx
-        in
-        (* function to accumulate one more loop iteration:
-           F(X(n+1)) = X(0) U body(F(X(n))
-           we apply the loop body and add back the initial abstract state
-         *)
-        let f x = D.join a (eval_stat (filter x e true) s) in
-        (* compute fixpoint from the initial state (i.e., a loop invariant) *)
-        let inv = fix f a in
-        (* and then filter by exit condition *)
-        filter inv e false
+          (* simple fixpoint *)
+          let rec fix (f:t -> t) (x:t) (n:int) (u:int): t = 
+            (* Printf.printf "here:%d\n" u; *)
+            if u > 0 then 
+              let fx = eval_stat (filter x e true) s in 
+              fix f fx n (u-1)
+            else 
+              if n = 0 then 
+                let fx = f x in 
+                if D.subset fx x then fx else fix f (D.widen x fx) 0 0 
+              else
+                let fx = f x in 
+                if D.subset fx x then fx else fix f fx (n-1) 0
+          in
+          (* function to accumulate one more loop iteration:
+              F(X(n+1)) = X(0) U body(F(X(n))
+              we apply the loop body and add back the initial abstract state
+            *)
+          let f x = D.join a (eval_stat (filter x e true) s) in
+  
+          let inv = (fix f a !widening_delay !widening_delay) in
+          (* and then filter by exit condition *)
+          filter inv e false
 
     | AST_assert (e, _) ->
        let res = filter a (e, ext) false in
