@@ -55,12 +55,10 @@
     |MINF -> MINF
     |Int a -> Int (Z.add a Z.one)
 
-  (* lift binary arithmetic operations *)
-  let lift1 f x  =match x with
-  | BOT-> BOT
-  | Iv(a,b) -> (match a, b with
-              |Int x, Int y when (Z.geq x Z.zero && Z.geq y Z.zero )-> if Z.gt (f x) (f y) then Iv(Int (f y),  Int(f x)) else  Iv(Int (f x),  Int(f y)) 
-              | _, _  -> Iv(a, b))
+  let neg_bound= function
+    | PINF -> MINF
+    | MINF -> PINF
+    | Int x -> Int (Z.neg x)
 
   (* lift binary arithmetic operations *)
   let lift2  f x y =match x,y with
@@ -73,8 +71,10 @@
                         |_ -> BOT)
 
 
-  (* arithmetic operations *)
-  let neg  x = lift1 Z.neg x
+  let neg = function 
+    | BOT -> BOT 
+    | Iv(a, b) -> Iv(neg_bound b, neg_bound a)
+            
 
   let add (x:t) (y:t) : t = lift2 Z.add x y
   let sub x y= lift2 Z.add x (neg y)

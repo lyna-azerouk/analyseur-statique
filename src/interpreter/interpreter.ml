@@ -24,6 +24,7 @@ open Domain
 let trace = ref false
 
 let widening_delay = ref 0
+let unroll = ref 0
 
 
 (* utilities *)
@@ -150,7 +151,6 @@ module Interprete(D : DOMAIN) =
     | AST_while (e,s) ->
           (* simple fixpoint *)
           let rec fix (f:t -> t) (x:t) (n:int) (u:int): t = 
-            (* Printf.printf "here:%d\n" u; *)
             if u > 0 then 
               let fx = eval_stat (filter x e true) s in 
               fix f fx n (u-1)
@@ -167,8 +167,10 @@ module Interprete(D : DOMAIN) =
               we apply the loop body and add back the initial abstract state
             *)
           let f x = D.join a (eval_stat (filter x e true) s) in
-  
-          let inv = (fix f a !widening_delay !widening_delay) in
+          (* and fu x = D.join x (eval_stat (filter x e true) s)   
+          and fw x = D.widen x (eval_stat (filter x e true) s) in *)
+          (* compute fixpoint from the initial state (i.e., a loop invariant) *)
+          let inv = (fix f a !widening_delay !unroll) in
           (* and then filter by exit condition *)
           filter inv e false
 

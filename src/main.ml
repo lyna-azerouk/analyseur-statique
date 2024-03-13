@@ -18,6 +18,18 @@ module IntervalAnalysis =
     (Non_relational_domain.NonRelational
        (Interval_domain.Intervals))
 
+module Parity =
+  Interpreter.Interprete
+    (Non_relational_domain.NonRelational
+      (Parity_domain.Parity))
+
+    
+module ParityIntervalAnalysis =
+  Interpreter.Interprete
+    (Non_relational_domain.NonRelational
+      (Value_reduced_product.ReducedProduct(
+        Parity_interval_reduction.ParityIntervalsReduction
+      )))
 (* parse and print filename *)
 let doit filename =
   let prog = File_parser.parse_file filename in
@@ -56,9 +68,12 @@ let main () =
 	   "-interval", Arg.Unit (fun ()  -> action := IntervalAnalysis.eval_prog),"";
      "-delay",     Arg.Set_int Interpreter.widening_delay, "";
      (* -unroll *)
-     (* -parity-interval *)
+     (*-parity-interval *)
+     "-parity-interval", Arg.Unit (fun () -> action := ParityIntervalAnalysis.eval_prog),"";
+     ]
+    (* handle filenames *)
 
-    ]
+    
     (* handle filenames *)
     (fun filename -> files := (!files)@[filename])
     "";
