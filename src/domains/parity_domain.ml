@@ -12,12 +12,6 @@
     | Odd
     | TOP
  
-
-   (* lift binary arithmetic operations *)
-   let lift2 f x y =
-     match x,y, f with
-     | _ -> BOT
-
    (* unrestricted value *)
    let top = TOP
  
@@ -25,55 +19,71 @@
    let bottom = BOT
  
    (* constant *)
-   let const c = if Z.is_even c then Odd else Odd
+   let const c = if Z.is_even c then Even else Odd
  
    (* interval *)
    let rand x y =
      if x=y then const x
-     else  TOP
- 
- 
- 
-   let neg  x =  x 
- 
-   let add x y = match x,y with 
-     | _ , _ -> Even
- 
-   let sub = add
- 
-   let mul x y = match x,y with 
-    | _ -> Odd
+     else  (if y>x then TOP else BOT)
 
-   let div = lift2 (fun _ _ -> TOP)
-
-   let join a b = match a,b with
-    | _, _ -> TOP
+  let neg  x =  match x with
+    | Even -> Even
+    | Odd -> Odd
+    | BOT -> BOT
+    | TOP -> TOP
  
-   let meet a b = match a,b with
+  let add x y = match x,y with 
+    | Even, Even->  Even
+    | Odd, Odd ->  Even
+    | Even, Odd ->  Odd
+    | Odd, Even ->  Odd
+    | _,_ -> TOP
+ 
+  let sub x y= add x (neg y)
+ 
+  let mul x y  = match x,y with
+    |_, Even-> Even
+    | _, Odd | Odd, _ -> Odd
+    | Even, _ -> Even
+    |BOT, _ |_,BOT-> BOT
+    |_  ->TOP
+
+  let div x y = match x,y with
+    | _, Even -> Even
+    | Odd, Odd-> Odd
+    | Even, _ -> Even
+    |BOT, _ |_,BOT-> BOT
+    |_  ->TOP
+
+  let join a b = match a,b with
+    | Even , Even -> Even
+    |_ -> TOP
+ 
+  let meet a b = match a,b with
     | _ -> BOT  
  
-   let widen = join
+  let widen = join
 
-   let eq x y = match x,y with
+  let eq x y = match x,y with
     | _ -> x,y
  
    let neq x y = match x,y with
     | _ -> x,y
    
-   let gt x y = match x,y with 
+  let gt x y = match x,y with 
     | _ -> x,y
  
-   let geq x y = match x,y with 
+  let geq x y = match x,y with 
     | BOT, _ -> BOT, BOT
     | _ -> x,y
  
-   let subset x y = match x,y with
+  let subset x y = match x,y with
     | _ -> false 
 
-   let is_bottom a =  a = BOT
+  let is_bottom a =  a = BOT
  
    (* print abstract element *)
-   let print fmt x = match x with
+  let print fmt x = match x with
    | BOT -> Format.fprintf fmt "⊥"
    | Even -> Format.fprintf fmt "even"
    | Odd -> Format.fprintf fmt "odd"
@@ -81,11 +91,11 @@
 
    (* operator dispatch *)
 
-   let unary x op = match op with
+  let unary x op = match op with
    | AST_UNARY_PLUS  -> neg x
    | AST_UNARY_MINUS -> neg x
  
-   let binary x y op = match op with
+  let binary x y op = match op with
    | AST_PLUS     -> add x y
    | AST_MINUS    -> sub x y
    | AST_MULTIPLY -> mul x y
@@ -104,7 +114,7 @@
    | AST_UNARY_MINUS -> meet x r
  
 
-   let bwd_binary x y op r = match op with
+  let bwd_binary x y op r = match op with
  
    | AST_PLUS ->
        meet x (sub r y), meet y (sub r x)

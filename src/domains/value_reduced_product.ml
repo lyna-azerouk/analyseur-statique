@@ -10,20 +10,24 @@ module ReducedProduct (R : VALUE_REDUCTION) =
 
   type t = R.t (* A.t * B.t *)
 
-  let top = A.top, B.top
-  let bottom = A.bottom, B.bottom
-  let const c = A.const c, B.const c
-  let rand x y = A.rand x y, B.rand x y
+  let top = ((A.top),(B.top))
 
-  let lift f g ((x1,y1):t) ((x2,y2):t) =
-     R.reduce (f x1 x2, g y1 y2)
+  let bottom= ((A.bottom),(B.bottom))
 
-  let join = lift A.join B.join
-  let meet = lift A.meet B.meet 
+  let const c = R.reduce ((A.const c),(B.const c))
 
-  let subset ((x1,y1):t) ((x2,y2):t) = A.subset x1 x2 && B.subset y1 y2 
+  let rand x y =R.reduce ((A.rand x y),(B.rand x y))
+	
+  let join x y = R.reduce ((A.join (fst x) (fst y)),(B.join (snd x) (snd y)))
 
-  let is_bottom = (=) bottom 
+  let meet x y =  R.reduce ((A.meet (fst x) (fst y)),(B.meet (snd x) (snd y)))
+ 
+  let widen x y= R.reduce ((A.widen (fst x) (fst y)),(B.widen (snd x) (snd y)))
+
+  let subset x y =  ((A.subset (fst x) (fst y)) && (B.subset (snd x) (snd y))) 
+
+  let is_bottom a= A.is_bottom (fst a) && B.is_bottom (snd a) 
+
   let print fmt ((x,y):t) =
     begin
       A.print fmt x;
@@ -31,20 +35,13 @@ module ReducedProduct (R : VALUE_REDUCTION) =
       B.print fmt y 
     end
 
-  let unary ((a, b) : t) (op : int_unary_op) : t =  match op with 
-    | _ -> a,b 
+  let unary ((a,b):t) (op:int_unary_op) : t =R.reduce ((A.unary a op),(B.unary b op))
 
-  let binary ((x1,y1):t) ((x2,y2):t) (op : int_binary_op) : t = match op, x2,y2 with 
-    | _ -> x1,y1
+  let binary x y op =R.reduce ((A.binary (fst x) (fst y) op),(B.binary (snd x) (snd y) op))
 
-  let widen ((x1,y1):t) ((x2,y2):t) = 
-    R.reduce (A.widen x1 x2, B.widen y1 y2)
+  let compare ((x1,y1):t) ((x2,y2):t) (op: compare_op) : t * t = ( R.reduce (A.compare x1 x2 op)), (R.reduce (B.compare y1 y2 op))
 
-  let compare ((x1,y1):t) ((x2,y2):t) (op: compare_op) : t * t =  match op with 
-      | _ ->(x1,y1), (x2,y2)
-
-  let bwd_unary ((x1,y1):t) (op : int_unary_op) ((x2,y2):t) : t =  match op, x2, y2 with 
-  | _ , _,_->(x1,y1)
+  let bwd_unary x op r =R.reduce ((A.bwd_unary (fst x) op (fst r) ),(B.bwd_unary (snd x) op (snd r)))
 
   let bwd_binary ((x1,y1):t) ((x2,y2):t) (op : int_binary_op) ((r1,r2):t): t * t =  match op, r1, r2 with 
   | _,_,_ -> (x1,y1), (x2,y2)
