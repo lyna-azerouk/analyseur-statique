@@ -14,10 +14,11 @@
 
 
  module Intervals = (struct
+ include Value_domain
 
  (* types *)
    (* ***** *)
-   type bound =
+  type bound =
    | PINF
    | MINF
    | Int of Z.t
@@ -42,6 +43,14 @@
     let x = bound_cmp a b in
       if(x=(-1) || x=0) then b
       else a
+
+  let fst x = match x with
+    | Iv(Int a ,Int _) -> a
+    | _ ->  invalid_arg "first"
+
+  let snd x = match x with
+    | Iv(Int _, Int b) -> b
+    | _ -> invalid_arg "second"
 
   let minus_one x =
     match x with
@@ -153,7 +162,7 @@
 
   let top  = Iv( MINF, PINF)
 
-  let bottom =BOT
+  let bottom = BOT
 
   let const c = Iv (Int c, Int c)
 
@@ -209,8 +218,6 @@
     | AST_UNARY_PLUS  -> meet x r
     | AST_UNARY_MINUS -> meet x (neg r)
 
-
-
   let max_value x y = not (gt_value y x)
 
   let widen x y = match x,y with
@@ -220,5 +227,8 @@
       let a' = if max_value c a then a else MINF in
       let b' = if max_value b d then b else PINF in Iv(a',b')
     
-    
+  let is_pair x = match x with
+    | Iv(Int a, Int b) -> a=b && (Z.erem a (Z.of_int 2))=Z.zero 
+    | _ -> false
+
  end : VALUE_DOMAIN)

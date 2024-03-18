@@ -39,12 +39,21 @@ module ReducedProduct (R : VALUE_REDUCTION) =
 
   let binary x y op =R.reduce ((A.binary (fst x) (fst y) op),(B.binary (snd x) (snd y) op))
 
-  let compare ((x1,y1):t) ((x2,y2):t) (op: compare_op) : t * t = ( R.reduce (A.compare x1 x2 op)), (R.reduce (B.compare y1 y2 op))
-
   let bwd_unary x op r =R.reduce ((A.bwd_unary (fst x) op (fst r) ),(B.bwd_unary (snd x) op (snd r)))
 
-  let bwd_binary ((x1,y1):t) ((x2,y2):t) (op : int_binary_op) ((r1,r2):t): t * t =  match op, r1, r2 with 
-  | _,_,_ -> (x1,y1), (x2,y2)
+  let compare ((x1,y1):t) ((x2,y2):t) (op : compare_op) : t * t = 
+      let a1, a2 = A.compare x1 x2 op
+      and b1, b2 = B.compare y1 y2 op in 
+      (R.reduce (a1,b1), R.reduce (a2,b2))
 
+  let bwd_binary ((x1,y1):t) ((x2,y2):t) (op : int_binary_op) ((r1,r2):t): t * t = 
+   let a1, a2 = A.bwd_binary x1 x2 op r1
+    and b1, b2 = B.bwd_binary y1 y2 op r2 in 
+    (R.reduce (a1,b1), R.reduce (a2,b2))
 
+    let is_pair x = B.is_pair (snd x)
+  
+    let fst ((_,b):t)  = B.fst(b)
+    
+    let snd ((_,b):t) =  B.snd(b)
 end : VALUE_DOMAIN)

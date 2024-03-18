@@ -192,4 +192,9 @@ module Constants = (struct
       (* this is sound, but not precise *)
       x, y
 
+  let is_pair x = match x with
+      | Cst a->(Z.erem a (Z.of_int 2))=Z.zero
+      | _ -> false
+  let fst _ = invalid_arg "first"
+  let snd _ = invalid_arg "last"
 end : VALUE_DOMAIN)

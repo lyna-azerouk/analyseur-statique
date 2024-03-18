@@ -6,13 +6,13 @@
  module Parity = (struct
  
    (* type of abstract values *)
-   type t =
+  type t =
     | BOT
     | Even
     | Odd
     | TOP
  
-   (* unrestricted value *)
+    (* unrestricted value *)
    let top = TOP
  
    (* bottom value *)
@@ -48,37 +48,48 @@
     |BOT, _ |_,BOT-> BOT
     |_  ->TOP
 
-  let div x y = match x,y with
-    | _, Even -> Even
-    | Odd, Odd-> Odd
-    | Even, _ -> Even
-    |BOT, _ |_,BOT-> BOT
-    |_  ->TOP
+  let div a b = match a,b with
+    | BOT,_ | _,BOT -> BOT
+    | Even, Odd -> Even
+    | Odd, Odd -> Odd
+    | _ -> TOP
 
   let join a b = match a,b with
-    | Even , Even -> Even
-    |_ -> TOP
+    | BOT,x | x,BOT -> x
+    | TOP,_ | _,TOP -> TOP
+    | Even, Even -> Even
+    | Odd, Odd -> Odd
+    | _ -> TOP
  
   let meet a b = match a,b with
-    | _ -> BOT  
+  | TOP, x | x, TOP -> x
+  | Even, Even -> Even
+  | Odd, Odd -> Odd 
+  | _ -> BOT  
+
  
   let widen = join
 
   let eq x y = match x,y with
+    | BOT, _ | _, BOT -> BOT, BOT
+    | TOP, a | a , TOP -> a, a
+    | Even, Odd | Odd, Even -> BOT, BOT
     | _ -> x,y
- 
-   let neq x y = match x,y with
+
+  let neq x y = match x,y with
     | _ -> x,y
    
   let gt x y = match x,y with 
-    | _ -> x,y
- 
-  let geq x y = match x,y with 
     | BOT, _ -> BOT, BOT
     | _ -> x,y
  
+  let geq x y = match x,y with 
+    | _ -> x,y
+ 
   let subset x y = match x,y with
-    | _ -> false 
+  | BOT,_ | _,TOP -> true
+  | Even, Even | Odd, Odd -> true 
+  | _ -> false 
 
   let is_bottom a =  a = BOT
  
@@ -92,7 +103,7 @@
    (* operator dispatch *)
 
   let unary x op = match op with
-   | AST_UNARY_PLUS  -> neg x
+   | AST_UNARY_PLUS  ->  x
    | AST_UNARY_MINUS -> neg x
  
   let binary x y op = match op with
@@ -122,9 +133,17 @@
    | AST_MINUS ->
        meet x (add y r), meet y (sub x r)
          
-   | AST_MULTIPLY -> meet x (sub r y), meet y (sub r x)
+   | AST_MULTIPLY ->
+    let contains_zero o = subset (const Z.zero) o in
+      (if contains_zero y && contains_zero r then x else meet x (div r y)),
+      (if contains_zero x && contains_zero r then y else meet y (div r x))
 
    | AST_DIVIDE ->
-       x, y
+       TOP,TOP
 
+
+  let is_pair x = (x=Even)
+
+  let fst _ = invalid_arg "first"
+  let snd _ = invalid_arg "last"
  end : VALUE_DOMAIN)

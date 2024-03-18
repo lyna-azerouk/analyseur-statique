@@ -98,6 +98,9 @@ module type VALUE_DOMAIN =
       *)
     val bwd_binary: t -> t -> int_binary_op -> t -> (t * t)
 
+    val is_pair: t -> bool
+    val fst:t ->  Z.t
+    val snd:t ->  Z.t
 end
 
 
