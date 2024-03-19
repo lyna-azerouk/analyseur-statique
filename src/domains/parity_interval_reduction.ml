@@ -16,11 +16,18 @@ let reduce ((par, itv):t) =
   else
     (let a = B.fst itv and b = B.snd itv in
     let a2 = (B.plus_one a) and b2 = (B.minus_one b) in
-      (match A.is_pair par, B.is_pair a, B.is_pair b with
-        | true, true, false ->  par, (B.interval a2 b)
-        | true, false, true ->  par, (B.interval a b2)
-        | _ ->  par, itv
-    )))
+        (match A.is_pair par, B.is_pair a, B.is_pair b with
+          | _, _, _  when A.top == par ->  par, itv
+          | _, _, _  when A.bottom == par ->  (A.bottom, B.bottom)
+          | true, true, false -> if a2 >b then (A.bottom, B.bottom) else par, (B.interval a2 b)
+          | true, false, true ->  if a >b2 then (A.bottom, B.bottom) else par, (B.interval a b2)
+          | true, false, false -> if a >b then (A.bottom, B.bottom) else  par, (B.interval a b)
+          | true, true, true -> if a >b then (A.bottom, B.bottom) else par, (B.interval a b)
+          | false, false, false -> if a >b then (A.bottom, B.bottom) else  par, (B.interval a b)
+          | false, true, true ->  if a2 >b2 then (A.bottom, B.bottom) else par, (B.interval a2 b2)
+          | false, false, true ->  if a >b2 then (A.bottom, B.bottom) else par, (B.interval a b2)
+          | false, true, false -> if a2 >b then (A.bottom, B.bottom) else par, (B.interval a2 b)
+        )))
 
   (* let parity (x ) = match x with 
       |  v -> A.const v 

@@ -249,7 +249,6 @@ end
 
   let interval (a: bound) (b: bound) : t = 
       match a, b with
-      | Int a, Int b when b < a ->  Iv (Int b, Int a)
       | Int a, Int b  -> Iv (Int a, Int b)
       | _ -> BOT
 
