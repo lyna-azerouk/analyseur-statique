@@ -93,7 +93,7 @@ module Parity : ParitySig = (struct
     | _ -> x,y
    
   let gt x y = match x,y with 
-    | BOT, _ -> BOT, BOT
+    | BOT, _  | _, BOT-> BOT, BOT
     | _ -> x,y
  
   let geq x y = match x,y with 
@@ -156,7 +156,7 @@ module Parity : ParitySig = (struct
 
   let is_pair x = match x with
     | Even -> true
-    | Odd -> true
+    | Odd -> false
     | _ -> false
 
  end )

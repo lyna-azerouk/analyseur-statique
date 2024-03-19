@@ -236,8 +236,9 @@ end
   
 
   let is_pair x = match x with
-    | (Int a) -> (Z.erem a (Z.of_int 2))=Z.zero 
-    | _ -> false
+    | (Int a) -> (Z.erem a (Z.of_int 2))=Z.zero
+    |PINF -> true
+    |MINF -> true
 
   let fst x = match x with
     | Iv(a, _) -> a
@@ -249,7 +250,11 @@ end
 
   let interval (a: bound) (b: bound) : t = 
       match a, b with
+      | Int a, Int b  when a > b  ->  BOT
       | Int a, Int b  -> Iv (Int a, Int b)
+      |MINF , Int b ->  Iv (MINF, Int b)
+      |Int a, PINF ->  Iv (Int a, PINF)
+      |MINF, PINF ->  Iv (MINF, PINF)
       | _ -> BOT
 
 
