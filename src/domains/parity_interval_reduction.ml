@@ -9,7 +9,6 @@ module B = Intervals
 
 type t = A.t * B.t
 
-(* let pair x = (Z.erem x (Z.of_int 2)) = Z.zero *)
 
 let reduce ((par, itv):t) = 
   (if itv = B.bottom then ((A.bottom, B.bottom))

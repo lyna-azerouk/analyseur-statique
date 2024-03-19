@@ -3,14 +3,14 @@
  open Value_domain
  
 
-  (* type of abstract values *)
-  type parityType =
+(* type of abstract values *)
+  type parityType = 
     | BOT
     | Even
     | Odd
     | TOP
 
-module type ParitySig = sig
+module type ParitySig = sig (* explained by ibrahima*)
   type t = parityType
 
   include VALUE_DOMAIN with type t := t
