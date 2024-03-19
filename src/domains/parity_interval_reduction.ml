@@ -12,14 +12,14 @@ type t = A.t * B.t
 (* let pair x = (Z.erem x (Z.of_int 2)) = Z.zero *)
 
 let reduce ((par, itv):t) = 
-  (if itv = B.bottom then  ( (A.bottom, B.bottom))
+  (if itv = B.bottom then ((A.bottom, B.bottom))
   else
     (let a = B.fst itv and b = B.snd itv in
     let a2 = (B.plus_one a) and b2 = (B.minus_one b) in
         (match A.is_pair par, B.is_pair a, B.is_pair b with
           | _, _, _  when A.top == par ->  par, itv
-          | _, _, _  when A.bottom == par ->  (A.bottom, B.bottom)
-          | true, true, false -> if a2 >b then (A.bottom, B.bottom) else par, (B.interval a2 b)
+          | _, _, _  when A.bottom == par -> (A.bottom, B.bottom)
+          | true, true, false -> if a2 >b then (A.bottom, B.bottom) else  par, (B.interval a2 b)
           | true, false, true ->  if a >b2 then (A.bottom, B.bottom) else par, (B.interval a b2)
           | true, false, false -> if a >b then (A.bottom, B.bottom) else  par, (B.interval a b)
           | true, true, true -> if a >b then (A.bottom, B.bottom) else par, (B.interval a b)

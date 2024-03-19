@@ -15,6 +15,8 @@ module type ParitySig = sig
 
   include VALUE_DOMAIN with type t := t
   val is_pair : t -> bool
+  val odd : t
+  val even : t
 end
 
 module Parity : ParitySig = (struct
@@ -23,7 +25,9 @@ module Parity : ParitySig = (struct
 
    (* unrestricted value *)
    let top = TOP
- 
+   let odd = Odd
+   let even = Even
+
    (* bottom value *)
    let bottom = BOT
  
