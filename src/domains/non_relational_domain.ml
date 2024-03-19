@@ -24,9 +24,6 @@ let debugstr = "-- DEBUG: "
 module DebugValue(V : VALUE_DOMAIN) = (struct
 
   type t = V.t
-  let fst _ = invalid_arg "first"
-  let snd _ = invalid_arg "last"
-  let  is_pair _ =   invalid_arg "pair"
 
   let debug_int_unary_op op i o =
     if !non_relational_debug then Format.printf "%s%s %a ~> %a@." debugstr op V.print i V.print o

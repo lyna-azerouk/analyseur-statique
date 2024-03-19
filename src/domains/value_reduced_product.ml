@@ -50,10 +50,4 @@ module ReducedProduct (R : VALUE_REDUCTION) =
    let a1, a2 = A.bwd_binary x1 x2 op r1
     and b1, b2 = B.bwd_binary y1 y2 op r2 in 
     (R.reduce (a1,b1), R.reduce (a2,b2))
-
-    let is_pair x = B.is_pair (snd x)
-  
-    let fst ((_,b):t)  = B.fst(b)
-    
-    let snd ((_,b):t) =  B.snd(b)
 end : VALUE_DOMAIN)

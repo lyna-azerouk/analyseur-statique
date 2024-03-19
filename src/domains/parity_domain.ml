@@ -2,17 +2,26 @@
  open Abstract_syntax_tree
  open Value_domain
  
- 
- module Parity = (struct
- 
-   (* type of abstract values *)
-  type t =
+
+  (* type of abstract values *)
+  type parityType =
     | BOT
     | Even
     | Odd
     | TOP
- 
-    (* unrestricted value *)
+
+module type ParitySig = sig
+  type t = parityType
+
+  include VALUE_DOMAIN with type t := t
+  val is_pair : t -> bool
+end
+
+module Parity : ParitySig = (struct
+
+   type t = parityType
+
+   (* unrestricted value *)
    let top = TOP
  
    (* bottom value *)
@@ -141,9 +150,9 @@
    | AST_DIVIDE ->
        TOP,TOP
 
+  let is_pair x = match x with
+    | Even -> true
+    | Odd -> true
+    | _ -> false
 
-  let is_pair x = (x=Even)
-
-  let fst _ = invalid_arg "first"
-  let snd _ = invalid_arg "last"
- end : VALUE_DOMAIN)
+ end )

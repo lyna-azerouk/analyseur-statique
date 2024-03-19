@@ -10,22 +10,36 @@
 
 
  open Abstract_syntax_tree
- open Value_domain
+  open Value_domain
+
+ type bound =
+ | PINF
+ | MINF
+ | Int of Z.t
+
+type intervalTyp = 
+ | Iv of bound*bound
+ | BOT 
 
 
- module Intervals = (struct
- include Value_domain
+module type IntervalSig = sig
+  type t = intervalTyp
 
+  include VALUE_DOMAIN with type t := t
+  val is_pair : bound -> bool
+  val fst : t -> bound
+  val snd : t -> bound
+  val plus_one : bound -> bound
+  val minus_one : bound -> bound
+  val interval : bound -> bound -> t
+end
+
+
+
+ module Intervals : IntervalSig = (struct
+  type t = intervalTyp
  (* types *)
    (* ***** *)
-  type bound =
-   | PINF
-   | MINF
-   | Int of Z.t
-
- type t = 
-   | Iv of bound*bound
-   | BOT 
 
 (* Fonction utilitaire: ***********************************************)
   let bound_cmp (a:bound) (b:bound) : int = match a,b with
@@ -43,14 +57,6 @@
     let x = bound_cmp a b in
       if(x=(-1) || x=0) then b
       else a
-
-  let fst x = match x with
-    | Iv(Int a ,Int _) -> a
-    | _ ->  invalid_arg "first"
-
-  let snd x = match x with
-    | Iv(Int _, Int b) -> b
-    | _ -> invalid_arg "second"
 
   let minus_one x =
     match x with
@@ -172,7 +178,8 @@
     match a, b with
     | _, _ when b < a -> BOT (* Handle case where b < a *)
     | _, _ -> Iv (Int a, Int b) (* Handle other cases *)
-
+    
+  
   let unary x op = match  op with 
     | AST_UNARY_MINUS -> neg x
     | AST_UNARY_PLUS  ->  x
@@ -226,9 +233,24 @@
     | Iv (a, b), Iv (c, d) ->
       let a' = if max_value c a then a else MINF in
       let b' = if max_value b d then b else PINF in Iv(a',b')
-    
+  
+
   let is_pair x = match x with
-    | Iv(Int a, Int b) -> a=b && (Z.erem a (Z.of_int 2))=Z.zero 
+    | (Int a) -> (Z.erem a (Z.of_int 2))=Z.zero 
     | _ -> false
 
- end : VALUE_DOMAIN)
+  let fst x = match x with
+    | Iv(a, _) -> a
+    | _ -> failwith "Not a pair"
+
+  let snd x = match x with
+    | Iv(_, b) -> b
+    | _ -> failwith "Not a pair"
+
+  let interval (a: bound) (b: bound) : t = 
+      match a, b with
+      | Int a, Int b when b < a ->  Iv (Int b, Int a)
+      | Int a, Int b  -> Iv (Int a, Int b)
+      | _ -> BOT
+
+ end )
