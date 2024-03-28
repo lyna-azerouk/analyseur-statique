@@ -29,6 +29,11 @@ module ParityIntervalAnalysis =
           (Value_reduced_product.ReducedProduct(
             Parity_interval_reduction.ParityIntervalsReduction
           )))
+
+module DisjonctionAnalysis =
+  Interpreter.Interprete
+    (Non_relational_domain.NonRelational
+        (Disjonctive_domain.Disjonction))
 (* parse and print filename *)
 let doit filename =
   let prog = File_parser.parse_file filename in
@@ -70,6 +75,9 @@ let main () =
      "-unroll"  , Arg.Set_int  (Interpreter.unroll)     ,"";
      (*-parity-interval *)
      "-parity-interval", Arg.Unit (fun () -> action := ParityIntervalAnalysis.eval_prog),"";
+     (*Disjonction*)
+     "-disjonction", Arg.Unit (fun () -> action := DisjonctionAnalysis.eval_prog),"";
+
      ]
     (* handle filenames *)
 

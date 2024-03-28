@@ -10,7 +10,7 @@
 
 
  open Abstract_syntax_tree
-  open Value_domain
+  open Value_domain  (* explained by Ibrahima*)
 
  type bound =
  | PINF
@@ -33,8 +33,6 @@ module type IntervalSig = sig
   val minus_one : bound -> bound
   val interval : bound -> bound -> t
 end
-
-
 
  module Intervals : IntervalSig = (struct
   type t = intervalTyp
@@ -156,15 +154,6 @@ end
     |Iv(x, y), Iv(v, w) when (bound_cmp y v) = 1 -> Iv(x, bound_min y (minus_one w)), Iv(bound_max x (plus_one v), w)
     |_ ,_  ->  BOT, BOT *)
 
-(* Fonction utilitaire: ***********************************************)
-  let bound_to_string (x:bound) = match x with 
-    |Int x ->  Z.to_string x
-    |PINF -> "+∞"
-    |MINF -> "-∞"
-
-  let print fmt (x:t)=  match x with 
-  | Iv(x, y) -> Format.fprintf fmt "[%s;%s]" (bound_to_string x) (bound_to_string y)
-  | BOT  -> Format.fprintf fmt "botttom"
 
   let top  = Iv( MINF, PINF)
 
@@ -249,13 +238,18 @@ end
     | _ -> failwith "Not a pair"
 
   let interval (a: bound) (b: bound) : t = 
-      match a, b with
-      | Int a, Int b  when a > b  ->  BOT
-      | Int a, Int b  -> Iv (Int a, Int b)
-      |MINF , Int b ->  Iv (MINF, Int b)
-      |Int a, PINF ->  Iv (Int a, PINF)
-      |MINF, PINF ->  Iv (MINF, PINF)
-      | _ -> BOT
+    match a, b with
+    | Int a, Int b  when a > b  ->  BOT
+    | Int a, Int b  -> Iv (Int a, Int b)
+    |MINF , Int b ->  Iv (MINF, Int b)
+    |Int a, PINF ->  Iv (Int a, PINF)
+    |MINF, PINF ->  Iv (MINF, PINF)
+    | _ -> BOT
 
-
+  let print fmt x = match x with
+    |Iv(Int a, Int b) -> Format.fprintf fmt "[%a;%a]" Z.pp_print a Z.pp_print b
+    |Iv(MINF, Int b) -> Format.fprintf fmt "[-∞;%a]" Z.pp_print b
+    |Iv(Int a, PINF) -> Format.fprintf fmt "[%a;+∞]" Z.pp_print a
+    |Iv(MINF, PINF) -> Format.fprintf fmt "[-∞;+∞]"
+    | _ -> Format.fprintf fmt "Disjunctions.print"
  end )

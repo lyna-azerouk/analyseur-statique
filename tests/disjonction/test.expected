@@ -1,0 +1,2 @@
+tests/disjonction/test.c:3.2-12: [ x in [0;0] ]
+analysis ended
