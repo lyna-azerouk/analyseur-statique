@@ -1,4 +1,3 @@
-
 open Abstract_syntax_tree
 open Domain
 

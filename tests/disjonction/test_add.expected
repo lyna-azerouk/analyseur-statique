@@ -1,2 +1,2 @@
-tests/disjonction/test_add.c:8.2-12: { [ x in [-14;0], y in [6;10] ] }, { [ x in [10;25], y in [0;5] ] }
+tests/disjonction/test_add.c:8.2-12: { [ x in [0;14], y in [6;10] ] }, { [ x in [10;25], y in [0;5] ] }
 analysis ended
