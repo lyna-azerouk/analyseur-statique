@@ -1,7 +1,7 @@
 {
   int x;
   int y;
-  x = rand(10,20);
+  x = rand(0,30);
   y = rand(0,1);
   if(y==0){ x = -x; }
   print_all;

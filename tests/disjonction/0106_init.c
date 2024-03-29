@@ -1,9 +1,9 @@
 {
   int x;
-  x = 12;
+  x = -10;
 }
 {
   int y;
-  y = 13;
+  y = 10;
   print_all;
 }

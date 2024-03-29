@@ -32,8 +32,9 @@ module ParityIntervalAnalysis =
 
 module DisjonctionAnalysis =
   Interpreter.Interprete
+   (Disjonctive_domain.Disjonction
     (Non_relational_domain.NonRelational
-        (Disjonctive_domain.Disjonction))
+        (Interval_domain.Intervals)))
 (* parse and print filename *)
 let doit filename =
   let prog = File_parser.parse_file filename in
@@ -68,15 +69,21 @@ let main () =
      "Use the constant abstract domain";
 
      (* options to add *)
+
      (* -interval *)
-	   "-interval", Arg.Unit (fun ()  -> action := IntervalAnalysis.eval_prog),"";
+	   "-interval", Arg.Unit (fun ()  -> action := IntervalAnalysis.eval_prog)," Use the interval abstract domain";
+
+     (*delay *)
      "-delay",     Arg.Set_int Interpreter.widening_delay, "";
+
      (* -unroll *)
-     "-unroll"  , Arg.Set_int  (Interpreter.unroll)     ,"";
+     "-unroll"  , Arg.Set_int  (Interpreter.unroll)     ," Set the number of unrolling for the loop";
+
      (*-parity-interval *)
-     "-parity-interval", Arg.Unit (fun () -> action := ParityIntervalAnalysis.eval_prog),"";
+     "-parity-interval", Arg.Unit (fun () -> action := ParityIntervalAnalysis.eval_prog)," Start Parity Interval Analysis";
+
      (*Disjonction*)
-     "-disjonction", Arg.Unit (fun () -> action := DisjonctionAnalysis.eval_prog),"";
+     "-disjonction", Arg.Unit (fun () -> action := DisjonctionAnalysis.eval_prog)," Statrt Disjonction Analysis";
 
      ]
     (* handle filenames *)

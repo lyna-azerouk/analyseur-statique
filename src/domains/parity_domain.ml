@@ -4,13 +4,13 @@
  
 
 (* type of abstract values *)
-  type parityType = 
+  type parityType = (* explained by ibrahima*)
     | BOT
     | Even
     | Odd
     | TOP
 
-module type ParitySig = sig (* explained by ibrahima*)
+module type ParitySig = sig 
   type t = parityType
 
   include VALUE_DOMAIN with type t := t
@@ -35,16 +35,23 @@ module Parity : ParitySig = (struct
    let const c = if Z.is_even c then Even else Odd
  
    (* interval *)
-   let rand x y =
-     if x=y then const x
-     else  (if y>x then TOP else BOT)
+   let rand x y = if x=y then const x else  (if y>x then TOP else BOT)
 
+  let is_pair x = match x with
+    | Even -> true
+    | Odd -> false
+    | _ -> false
+
+  let is_bottom a =  a = BOT
+
+  (* unary operator *)
   let neg  x =  match x with
     | Even -> Even
     | Odd -> Odd
     | BOT -> BOT
     | TOP -> TOP
- 
+
+ (* binary operators *)
   let add x y = match x,y with 
     | Even, Even->  Even
     | Odd, Odd ->  Even
@@ -67,6 +74,7 @@ module Parity : ParitySig = (struct
     | Odd, Odd -> Odd
     | _ -> TOP
 
+  (*Join*)
   let join a b = match a,b with
     | BOT,x | x,BOT -> x
     | TOP,_ | _,TOP -> TOP
@@ -80,9 +88,15 @@ module Parity : ParitySig = (struct
   | Odd, Odd -> Odd 
   | _ -> BOT  
 
- 
+  let subset x y = match x,y with
+  | BOT,_ | _,TOP -> true
+  | Even, Even | Odd, Odd -> true 
+  | _ -> false 
+
+  (*Widen *)
   let widen = join
 
+  (* Comparaison *)
   let eq x y = match x,y with
     | BOT, _ | _, BOT -> BOT, BOT
     | TOP, a | a , TOP -> a, a
@@ -98,23 +112,8 @@ module Parity : ParitySig = (struct
  
   let geq x y = match x,y with 
     | _ -> x,y
- 
-  let subset x y = match x,y with
-  | BOT,_ | _,TOP -> true
-  | Even, Even | Odd, Odd -> true 
-  | _ -> false 
 
-  let is_bottom a =  a = BOT
- 
-   (* print abstract element *)
-  let print fmt x = match x with
-   | BOT -> Format.fprintf fmt "⊥"
-   | Even -> Format.fprintf fmt "even"
-   | Odd -> Format.fprintf fmt "odd"
-   | TOP -> Format.fprintf fmt "⊤"
-
-   (* operator dispatch *)
-
+  (* operator dispatch *)
   let unary x op = match op with
    | AST_UNARY_PLUS  ->  x
    | AST_UNARY_MINUS -> neg x
@@ -139,24 +138,22 @@ module Parity : ParitySig = (struct
  
 
   let bwd_binary x y op r = match op with
- 
    | AST_PLUS ->
        meet x (sub r y), meet y (sub r x)
- 
    | AST_MINUS ->
        meet x (add y r), meet y (sub x r)
-         
    | AST_MULTIPLY ->
     let contains_zero o = subset (const Z.zero) o in
       (if contains_zero y && contains_zero r then x else meet x (div r y)),
       (if contains_zero x && contains_zero r then y else meet y (div r x))
-
    | AST_DIVIDE ->
        TOP,TOP
 
-  let is_pair x = match x with
-    | Even -> true
-    | Odd -> false
-    | _ -> false
 
+  (* print abstract element *)
+  let print fmt x = match x with
+     | BOT -> Format.fprintf fmt "⊥"
+     | Even -> Format.fprintf fmt "even"
+     | Odd -> Format.fprintf fmt "odd"
+     | TOP -> Format.fprintf fmt "⊤"
  end )
