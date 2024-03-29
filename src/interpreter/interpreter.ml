@@ -148,31 +148,31 @@ module Interprete(D : DOMAIN) =
         (* then join *)
         D.join t f
 
-    | AST_while (e,s) ->
-          (* simple fixpoint *)
-          let rec fix (f:t -> t) (x:t) (n:int) (u:int): t = 
-            if u > 0 then 
-              let fx = eval_stat (filter x e true) s in 
-              fix f fx n (u-1)
-            else 
-              if n = 0 then 
-                let fx = f x in 
-                if D.subset fx x then fx else fix f (D.widen x fx) 0 0 
-              else
-                let fx = f x in 
-                if D.subset fx x then fx else fix f fx (n-1) 0
-          in
-          (* function to accumulate one more loop iteration:
-              F(X(n+1)) = X(0) U body(F(X(n))
-              we apply the loop body and add back the initial abstract state
-            *)
-          let f x = D.join a (eval_stat (filter x e true) s) in
-          (* and fu x = D.join x (eval_stat (filter x e true) s)   
-          and fw x = D.widen x (eval_stat (filter x e true) s) in *)
-          (* compute fixpoint from the initial state (i.e., a loop invariant) *)
-          let inv = (fix f a !widening_delay !unroll) in
-          (* and then filter by exit condition *)
-          filter inv e false
+    (* Definition of the while-loop abstract syntax tree *)
+| AST_while (e, s) ->
+  (* Recursive function to iteratively apply transformations and widen until a fixed point or limit is reached *)
+  let rec refine_until_stable (transform: t -> t) (current: t) (widen_limit: int) (unroll_limit: int): t =
+    if unroll_limit > 0 then 
+      let next = eval_stat (filter current e true) s in 
+      refine_until_stable transform next widen_limit (unroll_limit - 1)
+    else if widen_limit = 0 then 
+      let transformed = transform current in 
+      if D.subset transformed current then transformed
+      else refine_until_stable transform (D.widen current transformed) 0 0 
+    else
+      let transformed = transform current in 
+      if D.subset transformed current then transformed
+      else refine_until_stable transform transformed (widen_limit - 1) 0
+  in
+    (* Transformation function that joins the abstract domain with the evaluation of the statement *)
+    let transform_function x = D.join a (eval_stat (filter x e true) s) in
+
+    (* Initialization and invocation of the refinement process *)
+    let invariant = refine_until_stable transform_function a !widening_delay !unroll in
+    
+    (* Filtering the final invariant with the loop condition set to false *)
+    filter invariant e false
+
 
     | AST_assert (e, _) ->
        let res = filter a (e, ext) false in
