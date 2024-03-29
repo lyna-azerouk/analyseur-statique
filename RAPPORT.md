@@ -1,14 +1,13 @@
 # Projet d'analyseur statique du cours TAS - Rapport de projet
 
 *Nom et numéro d'étudiant des auteurs du projet.*
+
 Lina Azerouk 
+
 21206889
-*À compléter.*
+
 # Analyse du Domaine des Intervalles
 
-## Aperçu
-
-## Fonctionnalités Clés
 
 - **Gestion des Intervalles**: Implémentation du domaine des intervalles pour manipuler des ensembles d'entiers avec des bornes pouvant être ±∞.
 - [x]  les tests  tests/0_interval passent 
@@ -17,10 +16,9 @@ Lina Azerouk
 ## Analyse des Boucles et Élargissement
 
 - **Traitement Spécifique des Boucles**: 
-- **Options de Ligne de Commande**:
 - [x]  Loop sur les intervales tests/12_interval_loop
 - [x]  Loop sur les intervales tests/12_interval_loop_delay
-- []  Loop sur les intervales tests/12_interval_loop_delay_unroll
+- [ ]  Loop sur les intervales tests/12_interval_loop_delay_unroll
 
 ## Produit Réduit
 - **Domaine des Parités et Réduction**: Intégration du domaine des parités et création d'un produit réduit avec le domaine des intervalles.
