@@ -53,8 +53,13 @@ let plus_one x =
   |MINF -> MINF
   |Int a -> Int (Z.add a Z.one)
 
+let rec lift1 f x =
+    match x with
+    | Iv (a,b) -> f a b
+    | BOT -> BOT
+    | Union (a,b) -> Union((lift1 f a), (lift1 f b))
 
-let lift2  f x y =match x,y with
+let rec lift2  f x y =match x,y with
   | BOT,_ | _,BOT -> BOT
   | Iv(a,b), Iv (c,d) ->(match a,b,c,d with
                         |Int a,INF,Int c,_| Int a,_,Int c,INF -> Iv (Int (f a c),INF)
@@ -62,7 +67,7 @@ let lift2  f x y =match x,y with
                         |MINF,_,_,INF| _,INF,MINF,_| MINF,INF,_,_ | _,_,MINF,INF -> Iv(MINF,INF)
                         |MINF,Int b,_,Int d| _,Int b,MINF,Int d -> Iv (MINF, Int (f b d))
                         |_ -> BOT)
-  |_ ->BOT (* Disjonction*)
+  | Union(a,b), z | z, Union(a,b) -> Union((lift2 f a z), (lift2 f b z)) (*Disjonction *)
 
 
 let top = Iv(MINF, INF)
@@ -84,10 +89,8 @@ let rec subset a b = match a,b with
     | Union(i,j), z -> (subset i z) || (subset j z) (* Disjonction*)
     | z, Union(i,j) -> (subset z i) || (subset z j) (* Disjonction*)
 
-let neg = function 
-| BOT -> BOT 
-| Iv(a, b) -> Iv(neg_bound b, neg_bound a)
-|_ -> BOT (* Disjonction*)
+
+let neg (x:t) : t = lift1 (fun a b -> Iv (neg_bound b, neg_bound a)) x
 
 let add (x:t) (y:t) : t = lift2 Z.add x y
 
@@ -96,30 +99,44 @@ let sub x y= lift2 Z.add x (neg y)
 let rec join a b = match a,b with
 | BOT, x | x, BOT -> x
 | Iv(INF, MINF), x | x, Iv(INF, MINF) -> x
-| Iv(i, j), Iv(k, l) ->  Iv(bound_min i k, bound_max j l)
+| Iv(_, _), Iv(_, _) ->  if (subset a b) then b else if (subset b a) then a else Union(a, b)
 | Union(i,j), z | z, Union(i,j) -> Union(i, (join j z)) (* Disjonction*)
 
 
-let rec meet x y =  match x,y with 
+let  meet x y =  match x,y with 
   | BOT, _ | _, BOT -> BOT 
   | Iv (a1, b1), Iv (a2, b2) ->
       if gt_value a2 b1 || gt_value a1 b2 then BOT 
       else Iv (bound_max a1 a2, bound_min b1 b2)
-  | Union(a,b), z -> join (meet a z) (meet b z) (* Disjonction*)
-  | z, Union(a,b) -> join (meet z a) (meet z b) (* Disjonction*)
+  | _ -> BOT
 
-let  widen x y = match x,y with
-  |  BOT,_ | _,BOT -> BOT
-  |_  -> if subset x y then y else Union(x, y)
+  let max_value x y = not (gt_value y x)
+
+  let rec widen x y = match x,y with
+    | BOT, _ -> y 
+    | _, BOT -> x
+    | Iv (a, b), Iv (c, d) ->
+      let a' = if max_value c a then a else MINF in
+      let b' = if max_value b d then b else INF in Iv(a',b')
+    |  Union(a,b), z | z, Union(a,b) -> Union(widen a z, widen b z)
+
 
 let eq a b = let m = meet a b in m, m
 
 let neq a b = match a, b with 
   |Iv(x, y),Iv( v, w) when (bound_cmp x v) = 0 && (bound_cmp y w) = 0 -> a,b
   |Iv(x, y),Iv( v, _) when (bound_cmp x v) =0 -> Iv(plus_one x, y), b
-  | Union(_,_), _ -> a,b (* Disjonction*)
-  | _, Union(_,_) -> a,b (* Disjonction*)
+  | Union(_,_), _ -> a,b
+  | _, Union(_,_) -> a,b
   | _, _ ->  let m = meet a b in m, m
+
+  let gt a b = match a, b with
+    |Iv(x, y), Iv(v, w) when (bound_cmp y v) >= 1 -> Iv(bound_max x (plus_one v), y), Iv(v, bound_min (minus_one y) w)
+    |_ ,_  ->  BOT, BOT
+
+  let geq a b = match a, b with 
+    |Iv(x, y),Iv( v, w) when (bound_cmp y v) >= 0-> Iv(bound_max x v, y), Iv(v, bound_min y w)
+    |_ ,_  -> BOT, BOT
 
 let rec print fmt x = match x with
   |Iv(Int a, Int b) -> Format.fprintf fmt "[%a;%a]" Z.pp_print a Z.pp_print b
@@ -139,10 +156,13 @@ let binary x y op = match op with
 | AST_MINUS    -> sub x y
 | _ -> BOT
 
-let compare x y op = match op with
-| AST_EQUAL         -> eq x y
-| AST_NOT_EQUAL     -> neq x y
-|_ -> BOT,BOT
+let compare x y op  =  match op with 
+| AST_NOT_EQUAL -> neq x y
+| AST_EQUAL -> eq x y
+| AST_GREATER_EQUAL -> geq x y
+| AST_GREATER ->gt x y
+| AST_LESS_EQUAL    -> let y',x' = geq y x in x',y'
+| AST_LESS          -> let y',x' = gt y x in x',y'
 
 
 let bwd_unary x op r = match op with
