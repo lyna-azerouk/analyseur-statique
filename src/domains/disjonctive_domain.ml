@@ -65,8 +65,11 @@ module Disjonction(D:DOMAIN)  = (struct
     | _ -> BOT  
 
 
-    let widen (a:t) (b:t) : t = match a, b with 
-    | _-> BOT
+    let rec widen (a:t) (b:t) : t = match a, b with 
+    | ENS x, ENS y -> ENS(D.widen x y)
+    | Union(x1, x2), ENS y -> Union(widen x1 (ENS y), widen x2 (ENS y))
+    | Union(x1, x2), Union(y1, y2) -> Union(widen x1 y1, widen x2 y2)
+    | _ -> BOT
   
     let rec compare (a:t) (e1:int_expr) (op:compare_op) (e2:int_expr) : t =
       match a with
