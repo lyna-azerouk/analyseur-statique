@@ -1,2 +1,2 @@
-tests/disjonction/test_if.c:7.2-12: { [ x in [-30;0], y in [0;0] ] }, { [ x in [0;30], y in [1;1] ] }
+tests/disjonction/test_if.c:7.2-12: { [ x in [-20;-10], y in [1;1] ] }, { [ x in [10;20], y in [0;0] ] }
 analysis ended

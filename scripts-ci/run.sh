@@ -215,7 +215,7 @@ function run_test {
     run_test_dir "tests/11_interval_cmp" "-interval"
     run_test_dir "tests/12_interval_loop" "-interval"
     run_test_dir "tests/13_interval_loop_delay" "-interval -delay 3"
-    #run_test_dir "tests/14_interval_loop_delay_unroll" "-interval -unroll 3 -delay 3"
+    # run_test_dir "tests/14_interval_loop_delay_unroll" "-interval -unroll 3 -delay 3"
     run_test_dir "tests/20_reduced" "-parity-interval"
     run_test_dir "tests/disjonction" "-disjonction"
 
